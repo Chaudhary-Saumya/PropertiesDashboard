@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  MapPin, Phone, User, Maximize2, Trash2, Edit3, 
-  ChevronLeft, ChevronRight, Info, ArrowLeft, Heart, 
+import {
+  MapPin, Phone, User, Maximize2, Trash2, Edit3,
+  ChevronLeft, ChevronRight, Info, ArrowLeft, Heart,
   Share2, MessageSquare, Copy, Check, ExternalLink,
   Building2, LogOut
 } from 'lucide-react';
@@ -24,6 +24,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [displayUnit, setDisplayUnit] = useState('sqyard'); // 'sqyard' | 'sqmtr' | 'sqfoot'
 
   // Sync selectedPropertyDetails when property prop changes
   useEffect(() => {
@@ -147,13 +148,11 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
     const shareUrl = window.location.href;
     if (navigator.share) {
       navigator.share({
-        title: title,
-        text: `Check out this property: ${title} in ${location} for ${formatPrice(price)}`,
         url: shareUrl
       }).catch(err => console.log(err));
     } else {
-      navigator.clipboard.writeText(`${title} - ${location} (${formatPrice(price)}) \nLink: ${shareUrl}`);
-      showToast('Property details link copied to clipboard!', 'success');
+      navigator.clipboard.writeText(shareUrl);
+      showToast('Link copied to clipboard!', 'success');
     }
   };
 
@@ -208,6 +207,18 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
     }).format(value);
   };
 
+  // Area conversion from sq yards
+  const convertArea = (sqyd, unit) => {
+    const n = Number(sqyd);
+    if (unit === 'sqmtr') return +(n / 1.19599).toFixed(2);
+    if (unit === 'sqfoot') return +(n * 9).toFixed(2);
+    return +n.toFixed(4);
+  };
+
+  const unitLabels = { sqyard: 'sq yd', sqmtr: 'sq m', sqfoot: 'sq ft' };
+  const areaUnits = ['sqyard', 'sqmtr', 'sqfoot'];
+  const displayedArea = convertArea(sqryard, displayUnit);
+
   const handleEdit = () => {
     if (onEdit) {
       onEdit(localProperty);
@@ -222,7 +233,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
 
   const handleConfirmDelete = async () => {
     setIsDeleteConfirmOpen(false);
-    
+
     if (onDelete) {
       await onDelete(_id);
       if (onClose) onClose();
@@ -333,278 +344,310 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
 
       {/* Page Content */}
       <main className="flex-1">
-      <div className="animate-modal-enter w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 md:pb-8">
-        {/* Header back navigation and actions */}
-        <div className="flex items-center justify-between">
-          <button 
-            onClick={() => {
-              if (onClose) onClose();
-              else navigate(admin?.username === 'admin' ? '/superadmin' : '/dashboard');
-            }}
-            className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-xs font-black uppercase tracking-wider cursor-pointer group py-2"
-          >
-            <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-            Back to Listings
-          </button>
-
-          <div className="flex gap-2">
-            {/* Share */}
+        <div className="animate-modal-enter w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 md:pb-8">
+          {/* Header back navigation and actions */}
+          <div className="flex items-center justify-between">
             <button
-              onClick={handleShare}
-              className="w-9 h-9 rounded-2xl bg-white text-slate-500 border border-slate-100 hover:border-slate-200/80 hover:bg-slate-50/50 shadow-sm flex items-center justify-center transition-all cursor-pointer"
-              title="Share Details"
+              onClick={() => {
+                if (onClose) onClose();
+                else navigate(admin?.username === 'admin' ? '/superadmin' : '/dashboard');
+              }}
+              className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-xs font-black uppercase tracking-wider cursor-pointer group py-2"
             >
-              <Share2 size={16} strokeWidth={2.5} />
+              <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+              Back to Listings
             </button>
 
-            {/* Edit/Delete Admin Control options */}
-            <button
-              onClick={handleEdit}
-              className="w-9 h-9 rounded-2xl bg-white text-slate-650 border border-slate-100 hover:border-slate-200/80 hover:bg-indigo-50/50 hover:text-indigo-600 shadow-sm flex items-center justify-center transition-all cursor-pointer"
-              title="Edit Listing"
-            >
-              <Edit3 size={16} />
-            </button>
-
-            <button
-              onClick={handleDeleteClick}
-              className="w-9 h-9 rounded-2xl bg-white text-slate-655 border border-slate-100 hover:border-rose-200/80 hover:bg-rose-50/50 hover:text-rose-600 shadow-sm flex items-center justify-center transition-all cursor-pointer"
-              title="Delete Listing"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Main layout grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Left Column: Images Carousel & Notes */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Image carousel container */}
-            <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-[28px] overflow-hidden bg-slate-900 border border-slate-100/50 shadow-md group">
-              {images && images.length > 0 ? (
-                <>
-                  <img 
-                    src={images[currentImgIndex]} 
-                    alt={`${title} - image ${currentImgIndex + 1}`} 
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.02]"
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                  />
-                  
-                  {images.length > 1 && (
-                    <>
-                      {/* Chevrons */}
-                      <button 
-                        onClick={prevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-2xl bg-black/30 hover:bg-black/50 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer"
-                      >
-                        <ChevronLeft size={20} strokeWidth={2.5} />
-                      </button>
-                      <button 
-                        onClick={nextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-2xl bg-black/30 hover:bg-black/50 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer"
-                      >
-                        <ChevronRight size={20} strokeWidth={2.5} />
-                      </button>
-                      
-                      {/* Dot indicators */}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/20 px-3 py-1.5 rounded-full backdrop-blur-sm">
-                        {images.map((_, idx) => (
-                          <button 
-                            key={idx} 
-                            onClick={() => setCurrentImgIndex(idx)}
-                            className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentImgIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Image indicator badge */}
-                      <div className="absolute top-4 left-4 bg-black/40 text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl backdrop-blur-md tracking-wider">
-                        {currentImgIndex + 1} / {images.length}
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 bg-slate-50">
-                  <Maximize2 size={32} className="text-slate-300" />
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-450">No images listed</span>
-                </div>
-              )}
-            </div>
-
-            {/* Description Notes Card */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 text-slate-800 font-extrabold text-xs tracking-wider uppercase">
-                <Info size={16} className="text-indigo-500" />
-                <span>Owner's Description & Notes</span>
-              </div>
-              <div className="h-px bg-slate-100" />
-              {additionalInfo ? (
-                <p className="text-sm text-slate-655 leading-relaxed font-medium whitespace-pre-line">
-                  {additionalInfo}
-                </p>
-              ) : (
-                <p className="text-xs text-slate-450 italic font-medium leading-relaxed py-2">
-                  No additional description or parameter notes uploaded for this property listing. Contact the property owner directly for further specifications.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column: Structured details & CTAs */}
-          <div className="lg:col-span-5 space-y-6">
-            
-            {/* Title & Core Specs Panel */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-5">
-              {/* Tag Badges */}
-              <div className="flex gap-2">
-                <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-lg text-white tracking-widest shadow-sm ${
-                  type === 'flat' ? 'bg-indigo-600' :
-                  type === 'commercial' ? 'bg-purple-600' : 'bg-amber-600'
-                }`}>
-                  {type}
-                </span>
-                <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-lg text-white tracking-widest shadow-sm ${
-                  purpose === 'lease' ? 'bg-emerald-600' : 'bg-sky-600'
-                }`}>
-                  {purpose === 'lease' ? 'For Lease / Rent' : 'For Sale'}
-                </span>
-              </div>
-
-              {/* Title */}
-              <div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-800 leading-tight">
-                  {title}
-                </h1>
-              </div>
-
-              {/* Pricing / Area Stat display block */}
-              <div className="bg-slate-50 border border-slate-200/40 rounded-[20px] p-4 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Price</span>
-                  <span className="text-xl font-black text-slate-800 mt-1">
-                    {formatPrice(price)}
-                    {purpose === 'lease' && <span className="text-xs font-bold text-slate-400 tracking-wider">/ mo</span>}
-                  </span>
-                </div>
-                <div className="h-8 w-px bg-slate-200/85" />
-                <div className="flex flex-col text-right">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dimension</span>
-                  <span className="bg-[#fdf6e2] text-[#b58034] text-xs font-extrabold px-3 py-1 rounded-lg border border-[#f5e8c4] mt-1 shrink-0">
-                    {sqryard} gaj
-                  </span>
-                </div>
-              </div>
-
-              {/* 2x2 Specifications Grid */}
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
-                <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dimension</span>
-                  <span className="text-sm font-extrabold text-slate-700 mt-1">{sqryard} sqyd</span>
-                </div>
-                <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flat/Plot No</span>
-                  <span className="text-sm font-extrabold text-slate-700 mt-1">{flatNumber || 'N/A'}</span>
-                </div>
-                <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Listing Type</span>
-                  <span className="text-sm font-extrabold text-slate-700 mt-1 capitalize">{type}</span>
-                </div>
-                <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Purpose</span>
-                  <span className="text-sm font-extrabold text-slate-700 mt-1 capitalize">{purpose === 'lease' ? 'Rent' : 'Sale'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Location Address Details Panel */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 text-slate-800 font-extrabold text-xs tracking-wider uppercase">
-                <MapPin size={16} className="text-amber-500" />
-                <span>Location Address</span>
-              </div>
-              <div className="h-px bg-slate-100" />
-              <p className="text-sm font-bold text-slate-700 leading-relaxed">
-                {location}
-              </p>
+            <div className="flex gap-2">
+              {/* Share */}
               <button
-                onClick={handleCopyAddress}
-                className="w-full py-2.5 bg-slate-50 border border-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-100/50 transition-all font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                onClick={handleShare}
+                className="w-9 h-9 rounded-2xl bg-white text-slate-500 border border-slate-100 hover:border-slate-200/80 hover:bg-slate-50/50 shadow-sm flex items-center justify-center transition-all cursor-pointer"
+                title="Share Details"
               >
-                {copiedAddress ? (
-                  <>
-                    <Check size={14} className="text-emerald-500" />
-                    <span className="text-emerald-600">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={14} />
-                    <span>Copy Full Address</span>
-                  </>
-                )}
+                <Share2 size={16} strokeWidth={2.5} />
+              </button>
+
+              {/* Edit/Delete Admin Control options */}
+              <button
+                onClick={handleEdit}
+                className="w-9 h-9 rounded-2xl bg-white text-slate-650 border border-slate-100 hover:border-slate-200/80 hover:bg-indigo-50/50 hover:text-indigo-600 shadow-sm flex items-center justify-center transition-all cursor-pointer"
+                title="Edit Listing"
+              >
+                <Edit3 size={16} />
+              </button>
+
+              <button
+                onClick={handleDeleteClick}
+                className="w-9 h-9 rounded-2xl bg-white text-slate-655 border border-slate-100 hover:border-rose-200/80 hover:bg-rose-50/50 hover:text-rose-600 shadow-sm flex items-center justify-center transition-all cursor-pointer"
+                title="Delete Listing"
+              >
+                <Trash2 size={16} />
               </button>
             </div>
+          </div>
 
-            {/* Owner details card & actions */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-5">
-              <div className="flex items-center gap-2 text-slate-800 font-extrabold text-xs tracking-wider uppercase">
-                <User size={16} className="text-indigo-500" />
-                <span>Property Owner Details</span>
-              </div>
-              <div className="h-px bg-slate-100" />
-              
-              <div className="flex justify-between items-center text-sm py-1">
-                <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Owner Name</span>
-                <span className="font-extrabold text-slate-700">{ownerName}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm pb-3 border-b border-slate-150/40">
-                <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Contact No</span>
-                <span className="font-extrabold text-indigo-650 select-all">{ownerContact}</span>
+          {/* Main layout grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            {/* Left Column: Images Carousel & Notes */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Image carousel container */}
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full rounded-[28px] overflow-hidden bg-slate-900 border border-slate-100/50 shadow-md group">
+                {images && images.length > 0 ? (
+                  <>
+                    <img
+                      src={images[currentImgIndex]}
+                      alt={`${title} - image ${currentImgIndex + 1}`}
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    />
+
+                    {images.length > 1 && (
+                      <>
+                        {/* Chevrons */}
+                        <button
+                          onClick={prevImage}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-2xl bg-black/30 hover:bg-black/50 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer"
+                        >
+                          <ChevronLeft size={20} strokeWidth={2.5} />
+                        </button>
+                        <button
+                          onClick={nextImage}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-2xl bg-black/30 hover:bg-black/50 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer"
+                        >
+                          <ChevronRight size={20} strokeWidth={2.5} />
+                        </button>
+
+                        {/* Dot indicators */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/20 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                          {images.map((_, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setCurrentImgIndex(idx)}
+                              className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentImgIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Image indicator badge */}
+                        <div className="absolute top-4 left-4 bg-black/40 text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl backdrop-blur-md tracking-wider">
+                          {currentImgIndex + 1} / {images.length}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 bg-slate-50">
+                    <Maximize2 size={32} className="text-slate-300" />
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-450">No images listed</span>
+                  </div>
+                )}
               </div>
 
-              {/* Desktop CTAs inside the panel */}
-              <div className="hidden sm:grid grid-cols-2 gap-3 pt-2">
+              {/* Description Notes Card */}
+              <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-slate-800 font-extrabold text-xs tracking-wider uppercase">
+                  <Info size={16} className="text-indigo-500" />
+                  <span>Owner's Description & Notes</span>
+                </div>
+                <div className="h-px bg-slate-100" />
+                {additionalInfo ? (
+                  <p className="text-sm text-slate-655 leading-relaxed font-medium whitespace-pre-line">
+                    {additionalInfo}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-450 italic font-medium leading-relaxed py-2">
+                    No additional description or parameter notes uploaded for this property listing. Contact the property owner directly for further specifications.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Structured details & CTAs */}
+            <div className="lg:col-span-5 space-y-6">
+
+              {/* Title & Core Specs Panel */}
+              <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-5">
+                {/* Tag Badges */}
+                <div className="flex gap-2">
+                  <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-lg text-white tracking-widest shadow-sm ${type === 'flat' ? 'bg-indigo-600' :
+                      type === 'commercial' ? 'bg-purple-600' : 'bg-amber-600'
+                    }`}>
+                    {type}
+                  </span>
+                  <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-lg text-white tracking-widest shadow-sm ${purpose === 'lease' ? 'bg-emerald-600' : 'bg-sky-600'
+                    }`}>
+                    {purpose === 'lease' ? 'For Lease / Rent' : 'For Sale'}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-800 leading-tight">
+                    {title}
+                  </h1>
+                </div>
+
+                {/* Pricing / Area Stat display block */}
+                <div className="bg-slate-50 border border-slate-200/40 rounded-[20px] p-4 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Price</span>
+                    <span className="text-xl font-black text-slate-800 mt-1">
+                      {formatPrice(price)}
+                      {purpose === 'lease' && <span className="text-xs font-bold text-slate-400 tracking-wider">/ mo</span>}
+                    </span>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200/85" />
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dimension</span>
+                    <span className="bg-[#fdf6e2] text-[#b58034] text-xs font-extrabold px-3 py-1 rounded-lg border border-[#f5e8c4] shrink-0">
+                      {displayedArea} {unitLabels[displayUnit]}
+                    </span>
+                    {/* Unit toggle */}
+                    <div className="flex gap-0.5 mt-0.5">
+                      {areaUnits.map(u => (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => setDisplayUnit(u)}
+                          className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded transition-all ${displayUnit === u
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-transparent text-slate-400 hover:text-slate-600'
+                            }`}
+                        >
+                          {unitLabels[u]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2x2 Specifications Grid */}
+                <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dimension</span>
+                    <span className="text-sm font-extrabold text-slate-700 mt-1">
+                      {displayedArea} {unitLabels[displayUnit]}
+                    </span>
+                    {/* Unit toggle pills */}
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      {areaUnits.map(u => (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => setDisplayUnit(u)}
+                          className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md transition-all ${displayUnit === u
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                            }`}
+                        >
+                          {unitLabels[u]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flat/Plot No</span>
+                    <span className="text-sm font-extrabold text-slate-700 mt-1">{flatNumber || 'N/A'}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Listing Type</span>
+                    <span className="text-sm font-extrabold text-slate-700 mt-1 capitalize">{type}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Purpose</span>
+                    <span className="text-sm font-extrabold text-slate-700 mt-1 capitalize">{purpose === 'lease' ? 'Rent' : 'Sale'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Address Details Panel */}
+              <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-slate-800 font-extrabold text-xs tracking-wider uppercase">
+                  <MapPin size={16} className="text-amber-500" />
+                  <span>Location Address</span>
+                </div>
+                <div className="h-px bg-slate-100" />
+                <p className="text-sm font-bold text-slate-700 leading-relaxed">
+                  {location}
+                </p>
                 <button
-                  onClick={handleWhatsApp}
-                  className="py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                  onClick={handleCopyAddress}
+                  className="w-full py-2.5 bg-slate-50 border border-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-100/50 transition-all font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
-                  <MessageSquare size={14} fill="currentColor" />
-                  <span>WhatsApp Chat</span>
+                  {copiedAddress ? (
+                    <>
+                      <Check size={14} className="text-emerald-500" />
+                      <span className="text-emerald-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={14} />
+                      <span>Copy Full Address</span>
+                    </>
+                  )}
                 </button>
-                <button
-                  onClick={handleCall}
-                  className="py-3.5 bg-slate-900 hover:bg-slate-800 text-amber-500 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-slate-900/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  <Phone size={14} />
-                  <span>Call Owner</span>
-                </button>
+              </div>
+
+              {/* Owner details card & actions */}
+              <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm space-y-5">
+                <div className="flex items-center gap-2 text-slate-800 font-extrabold text-xs tracking-wider uppercase">
+                  <User size={16} className="text-indigo-500" />
+                  <span>Property Owner Details</span>
+                </div>
+                <div className="h-px bg-slate-100" />
+
+                <div className="flex justify-between items-center text-sm py-1">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Owner Name</span>
+                  <span className="font-extrabold text-slate-700">{ownerName}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm pb-3 border-b border-slate-150/40">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Contact No</span>
+                  <span className="font-extrabold text-indigo-650 select-all">{ownerContact}</span>
+                </div>
+
+                {/* Desktop CTAs inside the panel */}
+                <div className="hidden sm:grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    onClick={handleWhatsApp}
+                    className="py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                  >
+                    <MessageSquare size={14} fill="currentColor" />
+                    <span>WhatsApp Chat</span>
+                  </button>
+                  <button
+                    onClick={handleCall}
+                    className="py-3.5 bg-slate-900 hover:bg-slate-800 text-amber-500 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-slate-900/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                  >
+                    <Phone size={14} />
+                    <span>Call Owner</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Mobile Sticky Bottom CTA Drawer Bar */}
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 p-4 px-6 flex gap-3 z-[100] pb-[calc(1rem+env(safe-area-inset-bottom,0px))] rounded-3xl">
-          <button
-            onClick={handleWhatsApp}
-            className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <MessageSquare size={14} fill="currentColor" />
-            <span>WhatsApp Chat</span>
-          </button>
-          <button
-            onClick={handleCall}
-            className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 text-amber-500 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-slate-900/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <Phone size={14} />
-            <span>Call Owner</span>
-          </button>
+          {/* Mobile Sticky Bottom CTA Drawer Bar */}
+          <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 p-4 px-6 flex gap-3 z-[100] pb-[calc(1rem+env(safe-area-inset-bottom,0px))] rounded-3xl">
+            <button
+              onClick={handleWhatsApp}
+              className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <MessageSquare size={14} fill="currentColor" />
+              <span>WhatsApp Chat</span>
+            </button>
+            <button
+              onClick={handleCall}
+              className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 text-amber-500 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-slate-900/10 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <Phone size={14} />
+              <span>Call Owner</span>
+            </button>
+          </div>
         </div>
-      </div>
       </main>
 
       {/* Edit Modal Overlay */}

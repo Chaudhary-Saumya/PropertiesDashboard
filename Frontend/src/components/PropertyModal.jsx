@@ -14,6 +14,7 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
   const [ownerContact, setOwnerContact] = useState('');
   const [flatNumber, setFlatNumber] = useState('');
   const [sqryard, setSqryard] = useState('');
+  const [areaUnit, setAreaUnit] = useState('sqyard'); // 'sqyard' | 'sqmtr' | 'sqfoot'
   const [purpose, setPurpose] = useState('sell');
   const [price, setPrice] = useState('');
   const [images, setImages] = useState([]);
@@ -33,6 +34,7 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
       setOwnerContact(property.ownerContact || '');
       setFlatNumber(property.flatNumber || '');
       setSqryard(property.sqryard || '');
+      setAreaUnit('sqyard'); // stored value is always in sq yards
       setPurpose(property.purpose || 'sell');
       setPrice(property.price || '');
       setImages(property.images || []);
@@ -85,6 +87,14 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
     setImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
+  // Conversion helpers
+  const toSqYards = (value, unit) => {
+    const n = Number(value);
+    if (unit === 'sqmtr')  return +(n * 1.19599).toFixed(4);
+    if (unit === 'sqfoot') return +(n * 0.111111).toFixed(4);
+    return n; // already sqyard
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -94,7 +104,7 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
     }
 
     if (isNaN(sqryard) || Number(sqryard) <= 0) {
-      showToast('Square yards must be a valid positive number.', 'error');
+      showToast('Area must be a valid positive number.', 'error');
       return;
     }
 
@@ -113,7 +123,7 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
       ownerName,
       ownerContact,
       flatNumber,
-      sqryard: Number(sqryard),
+      sqryard: toSqYards(sqryard, areaUnit),
       purpose,
       price: Number(price),
       images,
@@ -232,22 +242,25 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
             </div>
           </div>
 
-          {/* Square Yards */}
+          {/* Area with unit selector */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="modal-sqryard" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-              Square Yards (sqryard) *
+              Area / Size *
             </label>
-            <div className="relative flex items-center">
-              <Ruler className={`absolute left-3.5 transition-colors ${focusedField === 'sqryard' ? 'text-indigo-500' : 'text-slate-400'}`} size={16} />
+            <div className={`flex items-stretch bg-slate-50 border rounded-xl overflow-hidden transition-all ${
+              focusedField === 'sqryard'
+                ? 'border-indigo-500 ring-4 ring-indigo-500/5'
+                : 'border-slate-200 hover:border-slate-300'
+            }`}>
+              <div className="flex items-center pl-3.5 shrink-0">
+                <Ruler className={`transition-colors ${focusedField === 'sqryard' ? 'text-indigo-500' : 'text-slate-400'}`} size={16} />
+              </div>
               <input
                 id="modal-sqryard"
                 type="number"
                 min="1"
-                className={`w-full pl-11 pr-4 py-3 bg-slate-50 border rounded-xl text-slate-800 text-sm focus:outline-none focus:bg-white transition-all placeholder:text-slate-400/80 ${
-                  focusedField === 'sqryard' 
-                    ? 'border-indigo-500 ring-4 ring-indigo-500/5' 
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
+                step="any"
+                className="flex-1 min-w-0 pl-2.5 pr-2 py-3 bg-transparent text-slate-800 text-sm focus:outline-none placeholder:text-slate-400/80"
                 placeholder="e.g. 150"
                 value={sqryard}
                 onChange={(e) => setSqryard(e.target.value)}
@@ -255,7 +268,33 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
                 onBlur={() => setFocusedField(null)}
                 required
               />
+              {/* Unit toggle buttons */}
+              <div className="flex items-stretch border-l border-slate-200 shrink-0">
+                {[
+                  { key: 'sqyard', label: 'sq yd' },
+                  { key: 'sqmtr',  label: 'sq m'  },
+                  { key: 'sqfoot', label: 'sq ft'  },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setAreaUnit(key)}
+                    className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider transition-all border-r border-slate-200 last:border-r-0 ${
+                      areaUnit === key
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
+            <p className="text-[10px] text-slate-400 ml-1 font-medium">
+              {areaUnit === 'sqyard' && 'Entering in Square Yards (Gaj)'}
+              {areaUnit === 'sqmtr'  && `Entering in Square Metres · = ${sqryard ? (Number(sqryard) * 1.19599).toFixed(2) : '0'} sq yd`}
+              {areaUnit === 'sqfoot' && `Entering in Square Feet · = ${sqryard ? (Number(sqryard) * 0.111111).toFixed(2) : '0'} sq yd`}
+            </p>
           </div>
 
           {/* Flat Number */}
