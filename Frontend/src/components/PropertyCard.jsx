@@ -16,6 +16,7 @@ export default function PropertyCard({ property, onEdit, onDelete, showToast, on
     flatNumber,
     sqryard,
     purpose,
+    furnishing,
     price,
     images,
     additionalInfo
@@ -194,14 +195,24 @@ export default function PropertyCard({ property, onEdit, onDelete, showToast, on
           </div>
 
           {/* Specs Grid */}
-          <div className="grid grid-cols-2 border-y border-slate-100 py-3 my-4">
+          <div className="grid grid-cols-3 border-y border-slate-100 py-3 my-4">
             <div className="flex flex-col items-center justify-center border-r border-slate-100">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dimension</span>
               <span className="text-xs font-black text-slate-700 mt-1">{sqryard} sqyd</span>
             </div>
-            <div className="flex flex-col items-center justify-center">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flat Number</span>
+            <div className="flex flex-col items-center justify-center border-r border-slate-100">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Flat No.</span>
               <span className="text-xs font-black text-slate-700 mt-1">{flatNumber || 'N/A'}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Furnishing</span>
+              <span className={`text-[9px] font-black mt-1 px-1.5 py-0.5 rounded-md ${
+                furnishing === 'furnished' ? 'bg-emerald-50 text-emerald-700' :
+                furnishing === 'semiFurnished' ? 'bg-amber-50 text-amber-700' :
+                'bg-slate-100 text-slate-500'
+              }`}>
+                {furnishing === 'furnished' ? 'Furnished' : furnishing === 'semiFurnished' ? 'Semi-Furn.' : 'Unfurnished'}
+              </span>
             </div>
           </div>
 
@@ -314,12 +325,19 @@ export default function PropertyCard({ property, onEdit, onDelete, showToast, on
             </div>
 
             {/* Price & Dimension row */}
-            <div className="flex items-center gap-2 pt-1.5">
+            <div className="flex items-center gap-2 pt-1.5 flex-wrap">
               <span className="text-base font-black text-slate-900">
                 {formatPrice(price)}
               </span>
               <span className="bg-[#fdf6e2] text-[#b58034] text-[10px] font-black px-2 py-0.5 rounded-lg border border-[#f5e8c4] shrink-0">
                 {sqryard} gaj
+              </span>
+              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${
+                furnishing === 'furnished' ? 'bg-emerald-50 text-emerald-700' :
+                furnishing === 'semiFurnished' ? 'bg-amber-50 text-amber-700' :
+                'bg-slate-100 text-slate-500'
+              }`}>
+                {furnishing === 'furnished' ? 'Furnished' : furnishing === 'semiFurnished' ? 'Semi-Furn.' : 'Unfurnished'}
               </span>
             </div>
           </div>

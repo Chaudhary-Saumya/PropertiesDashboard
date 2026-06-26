@@ -279,7 +279,7 @@ app.put('/api/auth/profile', auth, async (req, res) => {
     });
   } catch (err) {
     console.error('Profile update error:', err);
-    res.status(550).json({ message: 'Server error updating profile' });
+    res.status(500).json({ message: 'Server error updating profile' });
   }
 });
 
@@ -413,6 +413,7 @@ app.post('/api/properties', auth, async (req, res) => {
     purpose,
     price,
     images,
+    furnishing,
     additionalInfo
   } = req.body;
 
@@ -428,6 +429,7 @@ app.post('/api/properties', auth, async (req, res) => {
       purpose,
       price,
       images,
+      furnishing,
       additionalInfo,
       createdBy: req.admin.id
     });

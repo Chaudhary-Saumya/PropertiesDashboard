@@ -14,6 +14,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api
 export default function PropertyDetailsPage({ property, onClose, onEdit, onDelete, showToast, admin, onLogout }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isSuperAdmin = admin && (admin.role === 'superadmin' || admin.username === 'admin');
 
   const [localProperty, setLocalProperty] = useState(property || null);
   const [isLoading, setIsLoading] = useState(!localProperty);
@@ -106,7 +107,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
           The property listing you are trying to view does not exist or may have been deleted.
         </p>
         <button
-          onClick={() => navigate(admin?.username === 'admin' ? '/superadmin' : '/dashboard')}
+          onClick={() => navigate(isSuperAdmin ? '/superadmin' : '/dashboard')}
           className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
         >
           Return to Dashboard
@@ -125,6 +126,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
     flatNumber,
     sqryard,
     purpose,
+    furnishing,
     price,
     images,
     additionalInfo
@@ -237,7 +239,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
     if (onDelete) {
       await onDelete(_id);
       if (onClose) onClose();
-      else navigate(admin?.username === 'admin' ? '/superadmin' : '/dashboard');
+      else navigate(isSuperAdmin ? '/superadmin' : '/dashboard');
       return;
     }
 
@@ -256,7 +258,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
       }
 
       showToast('Property deleted successfully.', 'success');
-      navigate(admin?.username === 'admin' ? '/superadmin' : '/dashboard');
+      navigate(isSuperAdmin ? '/superadmin' : '/dashboard');
     } catch (err) {
       console.error(err);
       showToast(err.message || 'Error deleting property', 'error');
@@ -265,7 +267,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
 
   const handleBackClick = () => {
     if (onClose) onClose();
-    else navigate(admin?.role === 'superadmin' ? '/dashboard' : '/dashboard');
+    else navigate((admin?.role === 'superadmin' || admin?.username === 'admin') ? '/superadmin' : '/dashboard');
   };
 
   return (
@@ -350,7 +352,7 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
             <button
               onClick={() => {
                 if (onClose) onClose();
-                else navigate(admin?.username === 'admin' ? '/superadmin' : '/dashboard');
+                else navigate(isSuperAdmin ? '/superadmin' : '/dashboard');
               }}
               className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-xs font-black uppercase tracking-wider cursor-pointer group py-2"
             >
@@ -560,6 +562,18 @@ export default function PropertyDetailsPage({ property, onClose, onEdit, onDelet
                   <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Purpose</span>
                     <span className="text-sm font-extrabold text-slate-700 mt-1 capitalize">{purpose === 'lease' ? 'Rent' : 'Sale'}</span>
+                  </div>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-3.5 flex flex-col justify-center col-span-2">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Furnishing Status</span>
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-lg w-fit ${
+                      furnishing === 'furnished'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : furnishing === 'semiFurnished'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                    }`}>
+                      {furnishing === 'furnished' ? 'Fully Furnished' : furnishing === 'semiFurnished' ? 'Semi Furnished' : ' Unfurnished / Naked'}
+                    </span>
                   </div>
                 </div>
               </div>

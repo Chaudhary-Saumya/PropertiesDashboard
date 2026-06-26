@@ -16,6 +16,7 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
   const [sqryard, setSqryard] = useState('');
   const [areaUnit, setAreaUnit] = useState('sqyard'); // 'sqyard' | 'sqmtr' | 'sqfoot'
   const [purpose, setPurpose] = useState('sell');
+  const [furnishing, setFurnishing] = useState('naked');
   const [price, setPrice] = useState('');
   const [images, setImages] = useState([]);
   const [additionalInfo, setAdditionalInfo] = useState('');
@@ -36,6 +37,7 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
       setSqryard(property.sqryard || '');
       setAreaUnit('sqyard'); // stored value is always in sq yards
       setPurpose(property.purpose || 'sell');
+      setFurnishing(property.furnishing || 'naked');
       setPrice(property.price || '');
       setImages(property.images || []);
       setAdditionalInfo(property.additionalInfo || '');
@@ -125,6 +127,7 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
       flatNumber,
       sqryard: toSqYards(sqryard, areaUnit),
       purpose,
+      furnishing,
       price: Number(price),
       images,
       additionalInfo
@@ -213,6 +216,22 @@ export default function PropertyModal({ property, onClose, onSaved, showToast, i
               options={[
                 { value: 'sell', label: 'For Sale' },
                 { value: 'lease', label: 'For Lease / Rent' }
+              ]}
+            />
+          </div>
+
+          {/* Furnishing Status */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              Furnishing Status *
+            </label>
+            <CustomSelect
+              value={furnishing}
+              onChange={setFurnishing}
+              options={[
+                { value: 'furnished', label: 'Fully Furnished' },
+                { value: 'semiFurnished', label: 'Semi Furnished' },
+                { value: 'naked', label: 'Unfurnished / Naked' }
               ]}
             />
           </div>

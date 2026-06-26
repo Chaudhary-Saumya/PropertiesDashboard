@@ -33,6 +33,9 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  // Delete confirmation modals
+  const [deletePropertyTarget, setDeletePropertyTarget] = useState(null); // property id
+  const [deleteUserTarget, setDeleteUserTarget] = useState(null); // { id, username }
   
   // Accordion state for users table
   const [expandedUsers, setExpandedUsers] = useState({});
@@ -96,7 +99,6 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
   }, []);
 
   const handleDeleteProperty = async (id) => {
-    if (!confirm('Are you sure you want to delete this listing?')) return;
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`${API_BASE}/properties/${id}`, {
@@ -117,12 +119,16 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
     }
   };
 
+  // Opens the delete confirm modal for a property
+  const handleDeletePropertyClick = (id) => {
+    setDeletePropertyTarget(id);
+  };
+
   const handleDeleteUser = async (userId, username) => {
     if (userId === admin.id) {
       showToast('You cannot delete your own admin account.', 'error');
       return;
     }
-    if (!confirm(`Are you sure you want to delete '${username}'? This will permanently delete their account and ALL of their listings.`)) return;
     
     const token = localStorage.getItem('token');
     try {
@@ -142,6 +148,15 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
       console.error(err);
       showToast(err.message || 'Error deleting user account', 'error');
     }
+  };
+
+  // Opens the delete confirm modal for a user
+  const handleDeleteUserClick = (userId, username) => {
+    if (userId === admin.id) {
+      showToast('You cannot delete your own admin account.', 'error');
+      return;
+    }
+    setDeleteUserTarget({ id: userId, username });
   };
 
   const handlePropertySaved = () => {
@@ -512,7 +527,7 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteUser(user._id, user.username)}
+                                onClick={() => handleDeleteUserClick(user._id, user.username)}
                                 className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                                 title="Delete account"
                                 disabled={user._id === admin.id}
@@ -572,13 +587,13 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
                                               >
                                                 Edit
                                               </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleDeleteProperty(p._id)}
-                                                className="px-2 py-0.5 text-[9px] border border-rose-200 text-rose-600 rounded hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                                              >
-                                                Delete
-                                              </button>
+                                               <button
+                                                 type="button"
+                                                 onClick={() => handleDeletePropertyClick(p._id)}
+                                                 className="px-2 py-0.5 text-[9px] border border-rose-200 text-rose-600 rounded hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                                               >
+                                                 Delete
+                                               </button>
                                             </td>
                                           </tr>
                                         ))}
@@ -716,14 +731,14 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
                                                   >
                                                     <Edit size={14} />
                                                   </button>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteProperty(prop._id)}
-                                                    className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
-                                                    title="Delete"
-                                                  >
-                                                    <Trash2 size={14} />
-                                                  </button>
+                                                   <button
+                                                     type="button"
+                                                     onClick={() => handleDeletePropertyClick(prop._id)}
+                                                     className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                                                     title="Delete"
+                                                   >
+                                                     <Trash2 size={14} />
+                                                   </button>
                                                 </div>
                                               </td>
                     </tr>
@@ -920,6 +935,38 @@ export default function SuperadminDashboard({ admin, onLogout, showToast, onProf
             onLogout();
           }}
           onClose={() => setIsLogoutConfirmOpen(false)}
+          type="danger"
+        />
+      )}
+
+      {/* Delete Property Confirmation Modal */}
+      {deletePropertyTarget && (
+        <ConfirmModal
+          title="Delete Listing"
+          message="Are you sure you want to permanently delete this property listing? This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            handleDeleteProperty(deletePropertyTarget);
+            setDeletePropertyTarget(null);
+          }}
+          onClose={() => setDeletePropertyTarget(null)}
+          type="danger"
+        />
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {deleteUserTarget && (
+        <ConfirmModal
+          title="Delete User Account"
+          message={`Are you sure you want to permanently delete '${deleteUserTarget.username}'? This will also delete ALL of their property listings.`}
+          confirmLabel="Delete Account"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            handleDeleteUser(deleteUserTarget.id, deleteUserTarget.username);
+            setDeleteUserTarget(null);
+          }}
+          onClose={() => setDeleteUserTarget(null)}
           type="danger"
         />
       )}

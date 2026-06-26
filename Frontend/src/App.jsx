@@ -7,6 +7,9 @@ import PropertyDetailsPage from './components/PropertyDetailsPage';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
+// Helper: Check if a user is a superadmin by role OR legacy username
+const isSuperAdmin = (admin) => admin && (admin.role === 'superadmin' || admin.username === 'admin');
+
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [admin, setAdmin] = useState(() => {
@@ -94,7 +97,7 @@ export default function App() {
           path="/login" 
           element={
             token && admin ? (
-              <Navigate to={admin.username === 'admin' ? "/superadmin" : "/dashboard"} replace />
+              <Navigate to={isSuperAdmin(admin) ? "/superadmin" : "/dashboard"} replace />
             ) : (
               <Auth onAuthSuccess={handleAuthSuccess} showToast={showToast} />
             )
@@ -105,7 +108,7 @@ export default function App() {
           path="/dashboard" 
           element={
             token && admin ? (
-              admin.username === 'admin' ? (
+              isSuperAdmin(admin) ? (
                 <Navigate to="/superadmin" replace />
               ) : (
                 <Dashboard 
@@ -125,7 +128,7 @@ export default function App() {
           path="/superadmin" 
           element={
             token && admin ? (
-              admin.username !== 'admin' ? (
+              !isSuperAdmin(admin) ? (
                 <Navigate to="/dashboard" replace />
               ) : (
                 <SuperadminDashboard
@@ -160,7 +163,7 @@ export default function App() {
           path="*" 
           element={
             token && admin ? (
-              <Navigate to={admin.username === 'admin' ? "/superadmin" : "/dashboard"} replace />
+              <Navigate to={isSuperAdmin(admin) ? "/superadmin" : "/dashboard"} replace />
             ) : (
               <Navigate to="/login" replace />
             )

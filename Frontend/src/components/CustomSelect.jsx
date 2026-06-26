@@ -48,7 +48,7 @@ export default function CustomSelect({ value, onChange, options, className = '' 
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-4.5 py-3.5 text-[13px] transition-colors flex items-center justify-between cursor-pointer ${
+              className={`w-full text-left px-4.5 py-3.5 pl-3 text-[13px] transition-colors flex items-center justify-between cursor-pointer ${
                 option.value === value 
                   ? 'bg-indigo-50/60 text-indigo-600 font-extrabold' 
                   : 'text-slate-600 hover:bg-slate-50/80 hover:text-slate-800 font-semibold'

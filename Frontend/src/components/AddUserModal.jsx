@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { X, Loader2, UserPlus, Lock, User } from 'lucide-react';
+import { X, Loader2, UserPlus, Lock, User, Mail } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export default function AddUserModal({ onClose, onSaved, showToast }) {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -43,7 +44,8 @@ export default function AddUserModal({ onClose, onSaved, showToast }) {
         },
         body: JSON.stringify({
           username: username.trim(),
-          password: password.trim()
+          password: password.trim(),
+          ...(email.trim() ? { email: email.trim() } : {})
         })
       });
 
@@ -119,6 +121,25 @@ export default function AddUserModal({ onClose, onSaved, showToast }) {
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isSaving}
                 required
+              />
+            </div>
+          </div>
+
+          {/* Email (optional) */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="add-email" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">
+              Email Address <span className="normal-case text-slate-400 font-normal">(optional — needed for email login)</span>
+            </label>
+            <div className="relative flex items-center group">
+              <Mail className="absolute left-3.5 text-slate-400" size={16} />
+              <input
+                id="add-email"
+                type="email"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all placeholder:text-slate-400"
+                placeholder="user@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSaving}
               />
             </div>
           </div>

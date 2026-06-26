@@ -56,6 +56,15 @@ const PropertySchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  furnishing: {
+    type: String,
+    required: [true, 'Furnishing status is required'],
+    enum: {
+      values: ['furnished', 'semiFurnished', 'naked'],
+      message: '{VALUE} is not a valid furnishing status'
+    },
+    default: 'naked'
+  },
   additionalInfo: {
     type: String,
     trim: true,

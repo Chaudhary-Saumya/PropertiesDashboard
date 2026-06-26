@@ -17,6 +17,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api
 
 export default function Dashboard({ admin, onLogout, showToast, onProfileUpdate }) {
   const navigate = useNavigate();
+  const isSuperAdmin = admin && (admin.role === 'superadmin' || admin.username === 'admin');
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabQuery = searchParams.get('tab') || 'overview';
 
@@ -190,7 +191,7 @@ export default function Dashboard({ admin, onLogout, showToast, onProfileUpdate 
 
       showToast('Property deleted successfully.', 'success');
       setProperties(prev => prev.filter(item => item._id !== id));
-      if (admin.username === 'admin') {
+      if (isSuperAdmin) {
         fetchUsers(); // Refresh users list to update listings counts
       }
     } catch (err) {
@@ -211,7 +212,7 @@ export default function Dashboard({ admin, onLogout, showToast, onProfileUpdate 
 
   const handleLogoClick = () => {
     handleTabChange('overview');
-    if (admin.username === 'admin') {
+    if (isSuperAdmin) {
       setActiveTab('listings');
     }
   };
@@ -224,7 +225,7 @@ export default function Dashboard({ admin, onLogout, showToast, onProfileUpdate 
     setIsModalOpen(false);
     setSelectedProperty(null);
     fetchProperties(); // Refresh list
-    if (admin.username === 'admin') {
+    if (isSuperAdmin) {
       fetchUsers(); // Refresh users list to update property states
     }
   };
